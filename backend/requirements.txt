@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+yfinance
+pandas
+numpy
+requests
+beautifulsoup4
+python-multipart
+python-dotenv
+openai
+aiohttp
+langchain
+langchain-groq
