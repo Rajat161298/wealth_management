@@ -3,20 +3,40 @@ image:
 
 tasks:
   - init: |
+      # update pip and install backend deps
       python3 -m pip install --upgrade pip
-      cd backend
-      pip install -r requirements.txt
+      cd backend || exit 0
+      pip install -r requirements.txt || true
+      cd ..
+      # make sure flutter is on PATH if installed by the Dockerfile
+      echo 'export PATH="$HOME/flutter/bin:$PATH"' >> ~/.bashrc || true
     command: |
+      # Start backend in background and capture logs
       cd backend
-      export OPENAI_API_KEY=${OPENAI_API_KEY}
-      uvicorn main:app --host 0.0.0.0 --port 8000 &
-      sleep 2
-      cd ../flutter_app
-      flutter pub get
-      flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0
+      nohup uvicorn main:app --reload --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+      echo "Started backend (uvicorn) -- logs: backend/uvicorn.log"
+      sleep 1
+
+      # Try to start flutter web if flutter is installed in the image
+      if [ -x "$HOME/flutter/bin/flutter" ]; then
+        echo "Flutter found — starting web server (8080)"
+        cd ../flutter_app || echo "flutter_app missing"
+        # fetch packages
+        flutter pub get || true
+        nohup flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0 > flutter.log 2>&1 &
+        echo "Started flutter web -- logs: flutter_app/flutter.log"
+      else
+        echo "Flutter not found in image. You can start it manually after workspace starts."
+      fi
 
 ports:
   - port: 8000
     onOpen: open-preview
+    visibility: public
   - port: 8080
     onOpen: open-preview
+    visibility: public
+
+vscode:
+  extensions:
+    - Dart-Code.flutter
