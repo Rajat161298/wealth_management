@@ -1,0 +1,22 @@
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - init: |
+      python3 -m pip install --upgrade pip
+      cd backend
+      pip install -r requirements.txt
+    command: |
+      cd backend
+      export OPENAI_API_KEY=${OPENAI_API_KEY}
+      uvicorn main:app --host 0.0.0.0 --port 8000 &
+      sleep 2
+      cd ../flutter_app
+      flutter pub get
+      flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0
+
+ports:
+  - port: 8000
+    onOpen: open-preview
+  - port: 8080
+    onOpen: open-preview
